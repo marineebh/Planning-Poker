@@ -2,11 +2,11 @@
 import json
 import statistics
 
-def load_backlog(filepath):
+def load_backlog(filepath="backlog_json/backlog_exemple.json"):
     try:
-        print(f"Tentative de chargement du fichier : backlog_json/{filepath}")
-        # with open(f"../backlog_json/{filepath}", "r", encoding='utf-8') as file:
-        with open(f"E:/s1/3conception_agile/CAPI/V5/app/backlog_exemple.json", "r", encoding='utf-8') as file:
+        print(f"Tentative de chargement du fichier : {filepath}")
+        with open(filepath, "r", encoding='utf-8') as file:
+        #with open(f"E:/s1/3conception_agile/CAPI/V5/app/backlog_exemple.json", "r", encoding='utf-8') as file:
             data = json.load(file)
             print(f"Fichier chargé avec succès. Contenu : {data}")
             return data
@@ -17,11 +17,15 @@ def load_backlog(filepath):
         print(f"Erreur de décodage JSON : {e}")
         return {}
 
-def save_backlog(filepath="../backlog_json/backlog.json", backlog=None):
-    if backlog is None:
-        backlog = {}
-    with open(filepath, "w") as file:
-        json.dump(backlog, file)
+
+
+def save_backlog(file_path, backlog):
+    with open(file_path, 'w') as f:
+        # Serialize the dictionary into a single JSON string and write it in one go
+        json_data = json.dumps(backlog)
+        f.write(json_data)
+
+        
 
 def load_cards(filepath):
     """
@@ -29,7 +33,7 @@ def load_cards(filepath):
     Returns a default card set if the file is not found or invalid.
     """
     try:
-        with open("../{filepath}/cards.json", "r") as file:
+        with open("{filepath}/cards.json", "r") as file:
             data = json.load(file)
             return data.get("cards", ["0", "1", "2", "3", "5", "8", "13", "20", "40", "100", "café", "intero"])
     except FileNotFoundError:

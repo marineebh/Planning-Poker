@@ -57,7 +57,7 @@ def run_settings(screen):
                 # Vérification des clics de boutons
                 if load_backlog_button.is_clicked(event):
                     print(f"Chargement du backlog: {backlog}")  # Ajoutez cette ligne pour vérifier
-                    backlog = load_backlog("backlog_exemple.json")
+                    backlog = load_backlog()
                     print(f"Backlog chargé: {backlog}")  # Et celle-ci
                 
                 if create_player_button.is_clicked(event):

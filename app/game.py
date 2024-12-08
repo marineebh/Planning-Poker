@@ -1,6 +1,6 @@
 # /planning_poker/app/game.py
 import pygame
-from app.utils import save_backlog, calculate_rule_result
+from app.utils import save_backlog, calculate_rule_result, Button
 
 def run_game(screen, backlog, players, rule):
     pygame.init()
@@ -24,60 +24,103 @@ def run_game(screen, backlog, players, rule):
     votes = {}
     current_player_index = 0
 
+    reveal_button = Button(500, 600, 200, 50, "Révéler les cartes")
+    next_button = Button(500, 700, 200, 50, "Suivant")
+    all_voted = False
+    cards_revealed = False
+    show_pause_message = False
+
     while running:
         screen.fill((255, 255, 200))
-        
+
         # Affiche la tâche actuelle
         task = tasks[current_task_index]
         task_text = font.render(f"Tâche: {task}", True, (0, 0, 0))
         screen.blit(task_text, (50, 50))
 
         # Affiche le joueur actuel
-        current_player = players[current_player_index]
+        current_player = players[current_player_index] if current_player_index < len(players) else "Tous ont voté"
         player_text = font.render(f"Joueur actuel: {current_player}", True, (0, 0, 255))
         screen.blit(player_text, (50, 100))
 
-        # Affiche les cartes disponibles
-        for value, position in card_positions.items():
-            screen.blit(card_images[value], position)
+        # Affiche les cartes disponibles si tous n'ont pas voté
+        if not all_voted:
+            for value, position in card_positions.items():
+                screen.blit(card_images[value], position)
 
-        # Affiche les votes déjà enregistrés
+        # Affiche les votes déjà enregistrés ou dévoilés
         for i, player in enumerate(players):
-            vote = votes.get(player, "Pas encore voté")
+            vote = votes.get(player, "Pas encore voté") if cards_revealed else "?"
             vote_text = font.render(f"{player}: {vote}", True, (0, 0, 0))
             screen.blit(vote_text, (50, 150 + i * 30))
+
+        # Affiche les boutons
+        if all_voted and not cards_revealed:
+            reveal_button.draw(screen)
+        if all_voted and cards_revealed and not show_pause_message:
+            next_button.draw(screen)
+
+        # Affiche le message de pause café si nécessaire
+        if show_pause_message:
+            pause_text = font.render("Pause Café !", True, (255, 0, 0))
+            screen.blit(pause_text, (screen.get_width() // 2 - pause_text.get_width() // 2, 300))
 
         pygame.display.flip()
 
         # Gestion des événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                save_backlog("backlog.json", backlog)
+                save_backlog(backlog=backlog)
                 running = False
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
-                for value, position in card_positions.items():
-                    x, y = position
-                    if x <= mouse_x <= x + card_width and y <= mouse_y <= y + card_height:
-                        # Enregistre le vote
-                        votes[current_player] = "Café" if value == "cafe" else "Intero" if value == "intero" else int(value)
-                        current_player_index += 1
 
-                        # Vérifie si tous les joueurs ont voté
-                        if current_player_index >= len(players):
-                            result = calculate_rule_result(votes, rule)
-                            backlog[task] = result
-                            current_task_index += 1
-                            votes = {}
-                            current_player_index = 0
+                # Enregistre les votes si c'est le tour des joueurs
+                if not all_voted:
+                    for value, position in card_positions.items():
+                        x, y = position
+                        if x <= mouse_x <= x + card_width and y <= mouse_y <= y + card_height:
+                            votes[current_player] = "Café" if value == "cafe" else "Intero" if value == "intero" else int(value)
+                            current_player_index += 1
 
-                            # Vérifie si toutes les tâches sont terminées
-                            if current_task_index >= len(tasks):
-                                save_backlog("backlog_final.json", backlog)
-                                running = False
-                        break
+                            # Vérifie si tous les joueurs ont voté
+                            if current_player_index >= len(players):
+                                all_voted = True
+                            break
+
+                # Bouton "Révéler les cartes"
+                if all_voted and not cards_revealed and reveal_button.is_clicked(event):
+                    cards_revealed = True
+
+                # Bouton "Suivant"
+                if all_voted and cards_revealed and next_button.is_clicked(event):
+                    result = calculate_rule_result(votes, rule)
+                    if result == -1:
+                        votes = {}  # Réinitialiser les votes
+                        current_player_index = 0  # Revenir au premier joueur
+                        all_voted = False
+                        cards_revealed = False
+                    elif any(v == "Café" for v in votes.values()):
+                        show_pause_message = True
+                        pygame.time.set_timer(pygame.USEREVENT, 3000)  # Afficher le message pendant 3 secondes
+                    else:
+                        backlog[task] = result
+                        current_task_index += 1
+                        votes = {}
+                        current_player_index = 0
+                        all_voted = False
+                        cards_revealed = False
+
+                        # Vérifie si toutes les tâches sont terminées
+                        if current_task_index >= len(tasks):
+                            save_backlog(backlog=backlog)
+                            running = False
+
+            elif event.type == pygame.USEREVENT and show_pause_message:
+                show_pause_message = False  # Masquer le message de pause café
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    save_backlog("backlog.json", backlog)
+                    save_backlog(backlog=backlog)
                     running = False
