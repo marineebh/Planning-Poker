@@ -1,7 +1,24 @@
-# /planning_poker/app/game.py
+"""
+@file game.py
+@brief Gère le déroulement du jeu de Planning Poker.
+@version 1.0
+@author ldebret & mblanchon
+@date 2024-12-08
+"""
+
+# Importation des bibliothèques
 import pygame
 from app.utils import save_backlog, calculate_rule_result, Button
 
+"""
+@brief Fonction principale qui gère l'exécution du jeu de Planning Poker.
+@details Cette fonction initialise le jeu, affiche les cartes et permet aux joueurs de voter. 
+Elle gère également les événements liés à l'affichage des résultats et à la navigation entre les tâches.
+@param screen L'écran Pygame sur lequel afficher l'interface du jeu.
+@param backlog Liste des tâches à estimer.
+@param players Liste des joueurs participant au jeu.
+@param rule La règle utilisée pour calculer les résultats des votes.
+"""
 def run_game(screen, backlog, players, rule):
     pygame.init()
     font = pygame.font.Font(None, 36)
@@ -24,6 +41,7 @@ def run_game(screen, backlog, players, rule):
     votes = {}
     current_player_index = 0
 
+    # Création des boutons "Révéler les cartes" et "Suivant"
     reveal_button = Button(500, 600, 200, 50, "Révéler les cartes")
     next_button = Button(500, 700, 200, 50, "Suivant")
     all_voted = False
@@ -70,6 +88,7 @@ def run_game(screen, backlog, players, rule):
         # Gestion des événements
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # Sauvegarde le backlog avant la fermeture du jeu
                 save_backlog(backlog=backlog)
                 running = False
 
@@ -97,8 +116,9 @@ def run_game(screen, backlog, players, rule):
                 if all_voted and cards_revealed and next_button.is_clicked(event):
                     result = calculate_rule_result(votes, rule)
                     if result == -1:
-                        votes = {}  # Réinitialiser les votes
-                        current_player_index = 0  # Revenir au premier joueur
+                        # Réinitialiser les votes et l'index des joueurs
+                        votes = {}
+                        current_player_index = 0
                         all_voted = False
                         cards_revealed = False
                     elif any(v == "Café" for v in votes.values()):
@@ -118,7 +138,8 @@ def run_game(screen, backlog, players, rule):
                             running = False
 
             elif event.type == pygame.USEREVENT and show_pause_message:
-                show_pause_message = False  # Masquer le message de pause café
+                # Masquer le message de pause café après 3 secondes
+                show_pause_message = False
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
